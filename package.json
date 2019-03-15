@@ -1,0 +1,22 @@
+{
+  "name": "node",
+  "version": "1.0.0",
+  "description": "A single instance of Node.js runs in a single thread which in background uses multiple threads to execute asynchronous code (event loop).",
+  "main": "asynchooks.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hanzhangyu/node.git"
+  },
+  "author": "zhangyu.han@outlook.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hanzhangyu/node/issues"
+  },
+  "homepage": "https://github.com/hanzhangyu/node#readme"
+}
