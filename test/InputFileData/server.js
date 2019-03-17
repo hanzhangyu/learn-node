@@ -19,10 +19,12 @@ const srv = http
                 });
                 part.on('end', function () {
                     const buffer = Buffer.concat(buffers);
-                    fs.writeFileSync(path.resolve(__dirname, part.filename), buffer);
+                    // fs.writeFileSync(path.resolve(__dirname, part.filename), buffer);
                     const fileType = `/${part.filename.split('.')[1]}` || ''; // 可加可不加
                     base64data = `data:image${fileType};base64,${buffer.toString('base64')}`;
                     console.log(base64data);
+                    const originBuffer = fs.readFileSync(path.resolve(__dirname, 'test.png'));
+                    console.log('compare buffer:', originBuffer.compare(buffer)); // 0, if you select this file to upload
                 });
                 // part.pipe(process.stdout);
             });
