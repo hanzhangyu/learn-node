@@ -3,54 +3,47 @@ const querystring = require('querystring')
 const fs = require('fs')
 const path = require('path')
 const multiparty = require('multiparty');
+
 // Create an HTTP server
 const srv = http
     .createServer((req, res) => {
-        console.log(req.method);
-        let imgData = '';
-        if (req.method === 'POST') {
+        console.log(req.url, req.method);
+        if (req.method === 'PUT') {
+            let base64data = null;
             const form = new multiparty.Form();
             form.on('part', function (part) {
                 if (part.filename === null) return part.resume();
-                part
-                    .pipe(fs.createWriteStream(path.resolve(__dirname, part.filename)))
-                    .on('finish', () => {
-                        const buff = fs.readFileSync(path.resolve(__dirname, part.filename));
-                        const base64data = buff.toString('base64');
-                        console.log(base64data);
-                    });
+                const buffers = [];
+                part.on('data', function (chunk) {
+                    buffers.push(chunk);
+                });
+                part.on('end', function () {
+                    const buffer = Buffer.concat(buffers);
+                    fs.writeFileSync(path.resolve(__dirname, part.filename), buffer);
+                    const fileType = `/${part.filename.split('.')[1]}` || ''; // 可加可不加
+                    base64data = `data:image${fileType};base64,${buffer.toString('base64')}`;
+                    console.log(base64data);
+                });
                 // part.pipe(process.stdout);
             });
 
             form.on('close', function () {
-                res.writeHead(302, {
-                    'Location': '/img',
-                });
-                res.end();
+                res.end(JSON.stringify({
+                    image: base64data,
+                }));
             });
             form.parse(req);
             return;
         }
-        // 暂存请求体信息
+        // 暂存请求体信息，非buffer数据使用拼接即可
         let body = '';
-        console.log(req.url)
         req.on('data', function (chunk) {
-            body += chunk
-            console.log('chunk:', chunk)
-        })
-        // 在end事件触发后，通过querystring.parse将post解析为真正的POST请求格式，然后向客户端返回。
+            body += chunk;
+        });
+        // 在end事件触发后，通过querystring.parse将post解析为真正的POST请求格式。
         req.on('end', function () {
-            // 解析参数
-            body = querystring.parse(body) // 将一个字符串反序列化为一个对象
-            console.log('body:', body)
-            if (req.url === '/img') {
-                res.setHeader('Content-Type', 'text/html;charset=UTF-8');
-                res.write(`<img src="${body.file}"/>`);
-                res.end();
-            } else {
-                // 输出表单
-                fs.createReadStream(path.resolve(__dirname, './index.tpl')).pipe(res);
-            }
+            body = querystring.parse(body);
+            fs.createReadStream(path.resolve(__dirname, './index.tpl')).pipe(res);
         })
     })
     .listen(3000, '127.0.0.1', () => {
