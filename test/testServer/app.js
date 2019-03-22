@@ -5,6 +5,7 @@ const fastify = require('fastify')({
 const delay = (timeout = 3000) => new Promise((resolve => setTimeout(resolve, timeout)));
 
 fastify.get('/', async (request, reply) => {
+    console.log(request.headers.referer); // nginx http://$hostx
     reply.type('application/json').code(200);
     // test for TTFB
     await delay(40000);
