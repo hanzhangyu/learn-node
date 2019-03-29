@@ -4,15 +4,14 @@
  */
 
 const frame = document.createElement('iframe');
-frame.onload = function (){
-    const h = frame.contentWindow.document.getElementsByTagName("H1")[0];
-    console.log(h.baseURI);
-    // const x = document.importNode(h, true); // this will clone the h1 in the iframe to body, get the new document(/node/index.html)
-    const x = document.adoptNode(h); // this will move the h1 in the iframe to body, get the new document
-    // const x = h.cloneNode(true); // this will clone the h1 in the iframe to body, get the origin document(/node/sub.html)
-    console.log(x.baseURI);
-    document.body.appendChild(x);
+frame.onload = function() {
+  const h = frame.contentWindow.document.getElementsByTagName('H1')[0];
+  console.log(h.baseURI);
+  // const x = document.importNode(h, true); // this will clone the h1 in the iframe to body, get the new document(/node/index.html)
+  const x = document.adoptNode(h); // this will move the h1 in the iframe to body, get the new document
+  // const x = h.cloneNode(true); // this will clone the h1 in the iframe to body, get the origin document(/node/sub.html)
+  console.log(x.baseURI);
+  document.body.appendChild(x);
 };
-frame.src='./sub.html';
+frame.src = './sub.html';
 document.body.appendChild(frame);
-
