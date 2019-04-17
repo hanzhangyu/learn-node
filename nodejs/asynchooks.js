@@ -35,6 +35,7 @@ let server = require('net').createServer(sock => {
 server.listen(8080, () => print('server started'));
 
 function print(str) {
+  // console也是一个异步的Api, 所以在异步的钩子里面不能使用，不然会死循环的
   fs.writeSync(1, str + '\n');
 }
 
