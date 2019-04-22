@@ -83,3 +83,4 @@ typings/
 
 # Custom files
 *.temp.js
+*.heapsnapshot
