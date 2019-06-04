@@ -1,25 +1,58 @@
 const fs = require('fs');
 const path = require('path');
-const inputFilePath = path.resolve(__dirname, '../../files/test.txt');
-// const fr = fs.createReadStream(inputFilePath, {
-//   encoding: 'utf8'
-// });
-// let once = false;
-// fr.on('readable', async () => {
-//   if (once) return;
-//   once = true;
-//   let data;
-//   // data = fr.read(100);
-//   let str = '';
-//   let restStr = '93';
-//   while ((data = fr.read(20))) {
-//     console.log(data); // ,92,91,90,89,88,87,8
-//     let curData = restStr + data;
-//     const ary = data.split(',');
-//     if (ary[ary.length - 1] !== '') {
-//       restStr = ary.splice(ary.length - 1, 1);
-//     }
-//     str += data;
-//   }
-//   console.log('readable', str);
-// });
+const LoserTree = require('./LoserTree');
+const inputFilePath = path.resolve(__dirname, './test.txt');
+
+const MAX_NUMBER_SIZE_IN_WOEK_AREA = 6;
+const READ_STEP = 24;
+// region create initial merge chunk
+const fr = fs.createReadStream(inputFilePath, {
+  encoding: 'utf8'
+});
+const fw = (reset = true) => {
+  console.log(cache);
+  console.log(cache.length);
+  cache = [];
+  reset && loserTree.resetState();
+};
+const ary = [];
+let loserTree = null;
+let minimax = -Infinity;
+let restStr = '';
+let cache = [];
+fr.on('readable', async () => {
+  let data;
+  while ((data = fr.read(READ_STEP))) {
+    let curData = restStr + data;
+    ary.push(...curData.split(','));
+    restStr = ary.splice(ary.length - 1, 1).toString();
+    // 取出K个元素，构成loserTree
+    if (!loserTree) {
+      loserTree = new LoserTree(ary.splice(0, MAX_NUMBER_SIZE_IN_WOEK_AREA));
+    }
+    // 数组还有元素时
+    while (ary.length) {
+      minimax = loserTree.shift();
+      if (minimax !== null) {
+        cache.push(minimax);
+        loserTree.push(ary.shift());
+      } else {
+        fw();
+      }
+    }
+    // loserTree没有可用元素时，重置状态
+    if (loserTree.isEmpty()) fw();
+  }
+}).on('close', () => {
+  while ((minimax = loserTree.shift())) {
+    // check the left value in tree
+    if (restStr) {
+      loserTree.push(restStr); // push the last one
+      restStr = '';
+    } else loserTree.adjust(loserTree.minimaxPointer);
+    cache.push(minimax);
+  }
+  fw(false);
+  console.log('close');
+});
+// endregion

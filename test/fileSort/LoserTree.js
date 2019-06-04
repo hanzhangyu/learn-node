@@ -4,7 +4,14 @@ class LoserTree {
     this.minimaxPointer = null; // 最大胜者的位置
     this.k = ary.length;
     this.nodes = Array(this.k).fill(0); // 顺序储存树结构，记录位置
-    this.leaves = ary.map(val => ({ val, state: LoserTree.NODE_STATE.init })); // 每一个节点
+    this.leaves = ary.map(val => ({
+      val: Number(val),
+      state: LoserTree.NODE_STATE.init
+    })); // 每一个节点
+    this.adjustAll();
+  }
+
+  adjustAll() {
     for (let i = this.k - 1; i >= 0; i--) this.adjust(i);
   }
 
@@ -12,7 +19,16 @@ class LoserTree {
    * 将有序的败者树的状态进行重置，在释放上一个归并段后触发
    */
   resetState() {
-    this.leaves.forEach(node => (node.state = LoserTree.NODE_STATE.normal));
+    this.leaves.forEach(node => (node.state = LoserTree.NODE_STATE.init));
+    for (let i = this.k - 1; i >= 0; i--) this.nodes[i] = 0;
+    this.adjustAll();
+  }
+
+  /**
+   *
+   */
+  isEmpty() {
+    return this.leaves.every(item => item.state === LoserTree.NODE_STATE.less);
   }
 
   /**
@@ -24,6 +40,7 @@ class LoserTree {
     const curMiniMaxNode = this.leaves[this.minimaxPointer];
     if (curMiniMaxNode.state === LoserTree.NODE_STATE.less) return null; // 所有的节点状态都为小于minimax
     this.minimax = curMiniMaxNode.val;
+    curMiniMaxNode.state = LoserTree.NODE_STATE.less;
     return this.minimax;
   }
 
@@ -32,9 +49,12 @@ class LoserTree {
    * @param val 新值
    */
   push(val) {
-    this.leaves[this.minimaxPointer].val = val;
-    if (this.minimax > val)
-      this.leaves[this.minimaxPointer].state = LoserTree.NODE_STATE.less;
+    val = Number(val);
+    const curMiniMaxNode = this.leaves[this.minimaxPointer];
+    if (!(curMiniMaxNode && curMiniMaxNode.state === LoserTree.NODE_STATE.less))
+      throw new Error('out of bucket');
+    curMiniMaxNode.val = val;
+    if (this.minimax <= val) curMiniMaxNode.state = LoserTree.NODE_STATE.normal;
     this.adjust(this.minimaxPointer);
   }
 
@@ -66,6 +86,7 @@ class LoserTree {
    * 序列化
    * @returns {string}
    */
+  /* istanbul ignore next */
   toString() {
     const nodes = this.nodes
       .map(index => {
@@ -85,24 +106,3 @@ LoserTree.NODE_STATE = {
 };
 
 module.exports = LoserTree;
-
-// const loserTree = new LoserTree([14, 38, 46, 39, 49, 51]);
-// console.log(0, loserTree.toString());
-// loserTree.shift();
-// loserTree.push(1);
-// console.log(1, loserTree.toString());
-// loserTree.shift();
-// loserTree.push(2);
-// console.log(2, loserTree.toString());
-// loserTree.shift();
-// loserTree.push(3);
-// console.log(3, loserTree.toString());
-// loserTree.shift();
-// loserTree.push(4);
-// console.log(4, loserTree.toString());
-// loserTree.shift();
-// loserTree.push(5);
-// console.log(5, loserTree.toString());
-// loserTree.shift();
-// loserTree.push(6);
-// console.log(loserTree.toString());
