@@ -2,8 +2,8 @@ class LoserTree {
   constructor(ary) {
     this.minimax = null; // 最大胜者的值
     this.minimaxPointer = null; // 最大胜者的位置
-    this.k = ary.length;
-    this.nodes = Array(this.k).fill(0); // 顺序储存树结构，记录位置
+    this.capacity = ary.length;
+    this.nodes = Array(this.capacity).fill(0); // 顺序储存树结构，记录位置
     this.leaves = ary.map(val => ({
       val: Number(val),
       state: LoserTree.NODE_STATE.init
@@ -12,7 +12,7 @@ class LoserTree {
   }
 
   adjustAll() {
-    for (let i = this.k - 1; i >= 0; i--) this.adjust(i);
+    for (let i = this.capacity - 1; i >= 0; i--) this.adjust(i);
   }
 
   /**
@@ -20,7 +20,7 @@ class LoserTree {
    */
   resetState() {
     this.leaves.forEach(node => (node.state = LoserTree.NODE_STATE.init));
-    for (let i = this.k - 1; i >= 0; i--) this.nodes[i] = 0;
+    for (let i = this.capacity - 1; i >= 0; i--) this.nodes[i] = 0;
     this.adjustAll();
   }
 
@@ -65,7 +65,7 @@ class LoserTree {
   adjust(index) {
     if (this.leaves[index].state === LoserTree.NODE_STATE.init)
       this.leaves[index].state = LoserTree.NODE_STATE.normal;
-    let parent = (index + this.k) >> 1;
+    let parent = (index + this.capacity) >> 1;
     while (parent > 0) {
       const parentPointer = this.nodes[parent];
       const parentNode = this.leaves[parentPointer];

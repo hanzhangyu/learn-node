@@ -6,7 +6,7 @@ describe('check props initial', () => {
   test('initial props', () => {
     expect(loserTree.minimax).toBe(null);
     expect(loserTree.minimaxPointer).toBe(null);
-    expect(loserTree.k).toBe(ary.length);
+    expect(loserTree.capacity).toBe(ary.length);
   });
   test('the order of node', () => {
     expect(loserTree.nodes).toEqual([0, 3, 4, 1, 2, 5]);

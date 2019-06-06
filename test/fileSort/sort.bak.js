@@ -5,6 +5,7 @@ const inputFilePath = path.resolve(__dirname, './test.txt');
 
 const MAX_NUMBER_SIZE_IN_WOEK_AREA = 6;
 const READ_STEP = 24;
+const K = 3;
 // region create initial merge chunk
 const fr = fs.createReadStream(inputFilePath, {
   encoding: 'utf8'
