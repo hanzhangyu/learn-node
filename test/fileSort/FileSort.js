@@ -11,7 +11,7 @@ class FileHuffman extends Huffman {
   }
   onNodeCreated(node, indexOfAry) {
     if (indexOfAry !== undefined) {
-      node.filename = `${node.val}.txt`;
+      node.filename = `${indexOfAry}.txt`;
       return;
     }
     node.filename = `${node.childs
@@ -57,18 +57,18 @@ class MemoryCache {
   }
 }
 
-class PromisifyReadStream {
+class PromisifyRead {
   constructor(file, cacheSize = 10) {
-    this.buf = Buffer.alloc(cacheSize);
-    this.fd = null;
-    this.file = file;
-    this.position = 0;
+    this.buf = Buffer.alloc(cacheSize); // buffer
+    this.fd = null; // file descriptor
+    this.file = file; // file path
+    this.position = 0; // file offset
   }
 
   // ignore the multibyte
   async read(length) {
-    if (!this.fd) this.fd = await PromisifyReadStream._open(this.file, 'r');
-    const { buffer, bytesRead } = await PromisifyReadStream._read(
+    if (!this.fd) this.fd = await PromisifyRead._open(this.file, 'r');
+    const { buffer, bytesRead } = await PromisifyRead._read(
       this.fd,
       this.buf,
       0,
@@ -80,20 +80,24 @@ class PromisifyReadStream {
   }
 
   async destroy() {
-    this.fd && (await PromisifyReadStream._close(this.fd));
+    this.fd && (await PromisifyRead._close(this.fd));
     this.buf = null;
     this.fd = null;
     this.position = 0;
   }
 }
-PromisifyReadStream._open = util.promisify(fs.open);
-PromisifyReadStream._read = util.promisify(fs.read);
-PromisifyReadStream._close = util.promisify(fs.close);
+PromisifyRead._open = util.promisify(fs.open);
+PromisifyRead._read = util.promisify(fs.read);
+PromisifyRead._close = util.promisify(fs.close);
 
+/**
+ * 1,1,11,1, => [1,1,11,1] and ''
+ * 1,1,11,1 => [1,1,11] and '1'
+ */
 class Str2Ary {
   constructor() {
-    this.restStr = '';
-    this.data = [];
+    this.restStr = ''; // string
+    this.data = []; // string[]
   }
 
   get length() {
@@ -112,6 +116,10 @@ class Str2Ary {
     str = this.restStr + str;
     this.data.push(...str.split(','));
     this.restStr = this.data.splice(this.data.length - 1, 1).toString();
+  }
+
+  min() {
+    return this.data[0];
   }
 
   getEnd() {
@@ -134,11 +142,13 @@ class FileSort {
 
   async run() {
     await this.createInitialChunk();
-    console.log(this.tempFilesSize);
     this.huffman = new FileHuffman(this.tempFilesSize, FileSort.K);
     this.cache.clear();
+    this.huffman.root.filename = this.outFile;
+    await this.merge();
   }
 
+  // TODO refactor by PromisifyRead, stream is not suitable for this case
   createInitialChunk() {
     const str2Ary = new Str2Ary();
     let loserTree = null;
@@ -208,42 +218,92 @@ class FileSort {
     });
   }
 
-  async test() {
-    // const data = await Promise.all([]);
-    // const promisifyReadStream = new PromisifyReadStream(
-    //   path.resolve(__dirname, './ddd.txt'),
-    //   20
-    // );
-    // const data = await promisifyReadStream.read(10);
-    // console.log(data);
+  async merge(root = this.huffman.root) {
+    for (let i = root.childs.length - 1; i >= 0; i--) {
+      // DFS
+      const child = root.childs[i];
+      if (child.childs) {
+        await this.merge(child);
+      }
+    }
+    const childs = root.childs.filter(child => !child.isPlaceholder);
+    if (childs.length === 1) {
+      root.filename = childs[0].filename; // keep file and set as parent
+      return;
+    }
+    this.cache.clear();
+    this.cache.outFile = path.resolve(this.tempDir, root.filename);
+    if (root.filename === '9.txt-5.txt-2.txt.txt') debugger;
+    let nodes = childs.map(node => ({
+      fr: new PromisifyRead(
+        path.resolve(this.tempDir, node.filename),
+        FileSort.READ_STEP
+      ),
+      str2Ary: new Str2Ary()
+    }));
+    while (true) {
+      // region read for empty node
+      const readQueue = nodes.filter(node => !node.str2Ary.length);
+      if (readQueue.length) {
+        const datas = await Promise.all(
+          readQueue.map(node => node.fr.read(FileSort.READ_STEP))
+        );
+        // region set data to node and remove the empty child
+        const destroyQueue = [];
+        readQueue.forEach((node, index) => {
+          if (datas[index]) node.str2Ary.add(datas[index]);
+          else destroyQueue.push(node.fr.destroy());
+        });
+        if (destroyQueue.length) {
+          await Promise.all(destroyQueue);
+          nodes = nodes.filter(node => node.str2Ary.length);
+        }
+        if (!nodes.length) break;
+        // endregion
+      }
+      // endregion
+
+      // region shift the minimum and push to cache
+      let min = Infinity;
+      let minIndex = null;
+      nodes.forEach((node, index) => {
+        let val = Number(node.str2Ary.min());
+        if (val < min) {
+          min = val;
+          minIndex = index;
+        }
+      });
+      nodes[minIndex].str2Ary.shift();
+      await this.cache.push(min);
+      // endregion
+    }
   }
 
-  async merge(root = this.huffman.root) {
-    root.childs.forEach(child => child.childs && this.merge(child)); // DFS
-    const nodes = root.childs.filter(child => !child.isPlaceholder);
-    if (nodes.length === 1) return; // keep file
-    // TODO merge left, mark file as isMerged
-    this.cache.clear();
-    const frs = nodes.map(node => new PromisifyReadStream(node.filename, 20));
-    const datas = nodes.map(() => []);
-    const dataStr = await frs[0].read(FileSort.READ_STEP);
-    const data = dataStr.split(',');
-    let restStr = data.splice(data.length - 1, 1).toString();
-    this.cache.push();
+  async clearTempDir() {
+    const files = await util.promisify(fs.readdir)(this.tempDir);
+    const _unlink = util.promisify(fs.unlink);
+    await Promise.all(
+      files
+        .filter(filename => filename !== '.gitignore')
+        .map(file => _unlink(path.resolve(this.tempDir, file)))
+    );
   }
 }
 FileSort.MAX_NUMBER_SIZE_IN_WOREK_AREA = 6; // 尽量控制在不超过6个，可能存在误差，一个数字最少占2个bytes（逗号）
 FileSort.READ_STEP = FileSort.MAX_NUMBER_SIZE_IN_WOREK_AREA * 4; // 每次最多读取这么多字符串
 FileSort.K = 3;
 
-const fileSort = new FileSort(
-  path.resolve(__dirname, './test.txt'),
-  path.resolve(__dirname, 'temp')
-);
-// fileSort.run().catch(err => console.error(err));
-fileSort.run();
-// region create initial merge chunk
-
-// endregion
+if (require.main === module) {
+  const fileSort = new FileSort(
+    path.resolve(__dirname, './test.txt'),
+    path.resolve(__dirname, 'temp'),
+    path.resolve(__dirname, 'temp/out.txt')
+  );
+  fileSort
+    .clearTempDir()
+    .then(() => fileSort.run())
+    .catch(err => console.error(err));
+  console.log('\x1b[36msort success in %s\x1b[0m', fileSort.outFile);
+}
 
 module.exports = FileSort;
