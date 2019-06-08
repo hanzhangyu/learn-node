@@ -18,11 +18,15 @@ class FileSort {
   }
 
   async run() {
+    console.time('build initial chunk');
     await this.createInitialChunk();
+    console.timeEnd('build initial chunk');
     this.huffman = new FileHuffman(this.tempFilesSize, FileSort.K);
     this.cache.clear();
     this.huffman.root.filename = this.outFile;
+    console.time('merge');
     await this.merge();
+    console.timeEnd('merge');
   }
 
   // TODO refactor by PromisifyRead, stream is not suitable for this case
@@ -110,7 +114,6 @@ class FileSort {
     }
     this.cache.clear();
     this.cache.outFile = path.resolve(this.tempDir, root.filename);
-    if (root.filename === '9.txt-5.txt-2.txt.txt') debugger;
     let nodes = childs.map(node => ({
       fr: new PromisifyRead(
         path.resolve(this.tempDir, node.filename),
@@ -154,6 +157,7 @@ class FileSort {
       await this.cache.push(min);
       // endregion
     }
+    this.cache.write(); // write left data to out file
   }
 
   async clearTempDir() {
@@ -166,21 +170,23 @@ class FileSort {
     );
   }
 }
-FileSort.MAX_NUMBER_SIZE_IN_WOREK_AREA = 6; // 尽量控制在不超过6个，可能存在误差，一个数字最少占2个bytes（逗号）
+FileSort.MAX_NUMBER_SIZE_IN_WOREK_AREA = 100000; // 尽量控制在不超过6个，可能存在误差，一个数字最少占2个bytes（逗号）
 FileSort.READ_STEP = FileSort.MAX_NUMBER_SIZE_IN_WOREK_AREA * 4; // 每次最多读取这么多字符串
-FileSort.K = 3;
+FileSort.K = 6;
 
 if (require.main === module) {
   const fileSort = new FileSort(
-    path.resolve(__dirname, './test.txt'),
+    path.resolve(__dirname, '../../files/big-sort-file.txt'),
     path.resolve(__dirname, 'temp'),
     path.resolve(__dirname, 'temp/out.txt')
   );
   fileSort
     .clearTempDir()
     .then(() => fileSort.run())
+    .then(() =>
+      console.log('\x1b[36msort success in %s\x1b[0m', fileSort.outFile)
+    )
     .catch(err => console.error(err));
-  console.log('\x1b[36msort success in %s\x1b[0m', fileSort.outFile);
 }
 
 module.exports = FileSort;
