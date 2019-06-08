@@ -80,6 +80,7 @@ class FileSort {
         .on('close', async () => {
           try {
             while ((minimax = loserTree.shift())) {
+              // shift first to make root for next one
               // check the left value in tree
               const restStr = str2Ary.getEnd();
               if (restStr) {
@@ -126,16 +127,32 @@ class FileSort {
       const readQueue = nodes.filter(node => !node.str2Ary.length);
       if (readQueue.length) {
         const datas = await Promise.all(
-          readQueue.map(node => node.fr.read(FileSort.READ_STEP))
+          readQueue.map(node =>
+            node.fr.isDestroyed ? null : node.fr.read(FileSort.READ_STEP)
+          )
         );
         // region set data to node and remove the empty child
         const destroyQueue = [];
+        let hasEndFile = false; // has file that data is empty and read is end
         readQueue.forEach((node, index) => {
-          if (datas[index]) node.str2Ary.add(datas[index]);
-          else destroyQueue.push(node.fr.destroy());
+          if (node.fr.isDestroyed) {
+            hasEndFile = true;
+            return;
+          }
+          if (datas[index]) {
+            node.str2Ary.add(datas[index]);
+            return;
+          }
+          const restStr = node.str2Ary.getEnd();
+          if (restStr) node.str2Ary.add(restStr);
+          destroyQueue.push(node.fr.destroy());
         });
+        // destroy the file that read is end
         if (destroyQueue.length) {
           await Promise.all(destroyQueue);
+        }
+        // delete node when data is empty and read is end
+        if (hasEndFile) {
           nodes = nodes.filter(node => node.str2Ary.length);
         }
         if (!nodes.length) break;
@@ -147,7 +164,7 @@ class FileSort {
       let min = Infinity;
       let minIndex = null;
       nodes.forEach((node, index) => {
-        let val = Number(node.str2Ary.min());
+        let val = Number(node.str2Ary.first());
         if (val < min) {
           min = val;
           minIndex = index;

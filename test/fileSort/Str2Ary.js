@@ -23,10 +23,13 @@ class Str2Ary {
   add(str) {
     str = this.restStr + str;
     this.data.push(...str.split(','));
-    this.restStr = this.data.splice(this.data.length - 1, 1).toString();
+    this.restStr =
+      this.data.length > 1
+        ? this.data.splice(this.data.length - 1, 1).toString()
+        : '';
   }
 
-  min() {
+  first() {
     return this.data[0];
   }
 

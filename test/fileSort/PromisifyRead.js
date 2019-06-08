@@ -9,6 +9,10 @@ class PromisifyRead {
     this.position = 0; // file offset
   }
 
+  get isDestroyed() {
+    return this.buf === null;
+  }
+
   // ignore the multibyte
   async read(length) {
     if (!this.fd) this.fd = await PromisifyRead._open(this.file, 'r');
@@ -33,5 +37,14 @@ class PromisifyRead {
 PromisifyRead._open = util.promisify(fs.open);
 PromisifyRead._read = util.promisify(fs.read);
 PromisifyRead._close = util.promisify(fs.close);
+
+// const promisifyRead = new PromisifyRead(require('path').resolve(__dirname, 'test.txt'));
+// promisifyRead.read(5).then(console.log);
+
+// async function test() {
+//   const promisifyRead = new PromisifyRead(require('path').resolve(__dirname, 'test.txt'));
+//   console.log(await promisifyRead.read(5));
+// }
+// test();
 
 module.exports = PromisifyRead;
