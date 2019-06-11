@@ -1,44 +1,38 @@
 const fs = require('fs');
 const async_hooks = require('async_hooks');
-
-let indent = 0;
-
 async_hooks
   .createHook({
-    init(asyncId, type, triggerId) {
-      const cId = async_hooks.executionAsyncId();
-      print(
-        `${getIndent(
-          indent
-        )}${type}(${asyncId}): trigger: ${triggerId} scope: ${cId}`
-      );
-    },
-    before(asyncId) {
-      print(`${getIndent(indent)}before:  ${asyncId}`);
-      indent += 2;
-    },
-    after(asyncId) {
-      indent -= 2;
-      print(`${getIndent(indent)}after:   ${asyncId}`);
+    init(asyncId, type, triggerAsyncId, resource) {
+      fs.writeSync(1, `${type}(${asyncId}): trigger: ${triggerAsyncId}\n`);
     },
     destroy(asyncId) {
-      print(`${getIndent(indent)}destroy: ${asyncId}`);
+      fs.writeSync(1, `destroy: ${asyncId}\n`);
     }
   })
   .enable();
-
-let server = require('net').createServer(sock => {
-  sock.end('hello world\n');
-  server.close();
-});
-
-server.listen(8080, () => print('server started'));
-
-function print(str) {
-  // console也是一个异步的Api, 所以在异步的钩子里面不能使用，不然会死循环的
-  fs.writeSync(1, str + '\n');
+async function A() {
+  fs.writeSync(1, `A -> ${async_hooks.executionAsyncId()}\n`);
+  setTimeout(() => {
+    fs.writeSync(1, `A in setTimeout -> ${async_hooks.executionAsyncId()}\n`);
+    B();
+  });
 }
-
-function getIndent(n) {
-  return ' '.repeat(n);
+async function B() {
+  fs.writeSync(1, `B -> ${async_hooks.executionAsyncId()}\n`);
+  process.nextTick(() => {
+    fs.writeSync(
+      1,
+      `B in process.nextTick -> ${async_hooks.executionAsyncId()}\n`
+    );
+    C();
+    C();
+  });
 }
+function C() {
+  fs.writeSync(1, `C -> ${async_hooks.executionAsyncId()}\n`);
+  Promise.resolve().then(() => {
+    fs.writeSync(1, `C in promise.then -> ${async_hooks.executionAsyncId()}\n`);
+  });
+}
+fs.writeSync(1, `top level -> ${async_hooks.executionAsyncId()}\n`);
+A();

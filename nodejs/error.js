@@ -1,4 +1,5 @@
 /**
+ * @file 错误与异常
  * TODO Q: 事件循环与nextTickQueue的错误会导致系统崩溃, Promise.resolve 的不会
  */
 Promise.resolve().then(() => {
