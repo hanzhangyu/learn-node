@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <ul>
+      <li>
+        除了使用结构化克隆算法，还可以使用Transferable对象，转移数据的所属权
+      </li>
+      <li>
+        递交所属权出去之后，数据将无法访问。适用于大数据集，对比
+        shareBufferArray 来说不用考虑 atomic 锁的问题
+      </li>
+    </ul>
+    <script>
+      const worker = new Worker('./worker.js');
+      let buf = new ArrayBuffer(4);
+
+      let intView = new Int8Array(buf, 0);
+      for (let i = 0; i < 4; i++) {
+        intView[i] = i;
+      }
+      console.log('origin data:', intView);
+      console.warn('before locked Transferable:', buf.byteLength);
+      worker.postMessage(buf, [buf]);
+      console.warn('locked Transferable:', buf.byteLength); // 不可访问
+      worker.addEventListener('message', function(event) {
+        // 需要重新回传才能访问
+        const intView = new Int8Array(event.data, 0);
+        console.log('send back in html:', intView);
+      });
+      buf = null;
+      intView = null;
+    </script>
+  </body>
+</html>
