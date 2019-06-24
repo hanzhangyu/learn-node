@@ -7,7 +7,7 @@ self.addEventListener(
     const arrayIndex = 0;
     const expectedStoredValue = 0;
     console.time(`work ${id} wait`);
-    // 如果index处等于expectedStoredValue则进入休眠
+    // 等待index处等于expectedStoredValue则退出休眠
     Atomics.wait(sharedArray, arrayIndex, expectedStoredValue);
     console.timeEnd(`work ${id} wait`);
     console.log(Atomics.load(sharedArray, arrayIndex));
