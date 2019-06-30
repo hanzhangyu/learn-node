@@ -81,6 +81,9 @@ console.log('process.version', process.version); // Node.js 版本
 console.log('process.versions', process.versions); // Node.js和其依赖的版本信息。 process.versions.modules表明了当前ABI版本，此版本会随着一个C++API变化而增加。 Node.js会拒绝加载模块，如果这些模块使用一个不同ABI版本的模块进行编译。
 // endregion
 
+let printed = false;
 setInterval(() => {
+  if (printed) return;
   console.log('alive', process.pid, process.ppid);
+  printed = true;
 }, 1000);
