@@ -9,3 +9,9 @@ export default {
     console.log('a run');
   }
 };
+
+function aFn() {
+  return 'afn return';
+}
+
+export { aFn };
