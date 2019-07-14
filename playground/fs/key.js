@@ -4,14 +4,17 @@
  * @link https://en.wikipedia.org/wiki/ASCII#ASCII_control_characters
  * @desc
  * 键盘输入ESC或者
- * 处理流程见笔记ascii
- * 1. 键盘按下触发ESC keyboard
- * 2. 键盘输出0x1b > /dev/tty
- * 3. tty进程是否处理
- *   1. 有处理，转义成对应的编码
- *     1. c语言为转义序列 Escape sequences （如\e === ESC）
- *     2. 大部分语言为Unicode seq (如\u0001b === ESC)
- *   2. 有处理，直接seq为脱字符Caret notation（如^[ === ESC）
+ * 1. 普通字符，直接由terminal传入tty
+ * 2. 控制字符（Control characters），tty收到之后会进行
+ *   1. 键盘按下ESC
+ *   2. 键盘输出0x1b > /dev/tty
+ *   3. tty进程是否处理
+ *     1. 有处理，转义成对应的编码
+ *       1. c语言为转义序列 Escape sequences （如\e === ESC）
+ *       2. 大部分语言为Unicode seq (如\u0001b === ESC)
+ *     2. 无处理
+ *       1. 特殊字符（Special characters），根据tty设置，`stty -a`，如`CTRL + C` 发送信号SIGINT
+ *       2. 其他直接seq为脱字符Caret notation（如^[ === ESC* ）
  */
 var stdin = process.stdin;
 const encoding = process.argv[2] === 'ascii' ? 'ascii' : 'utf8';
