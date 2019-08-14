@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <button id="xhrGet">xhrGet</button>
+    <button id="get">get</button>
+    <button id="post">post</button>
+
+    <script>
+      const handlers = {
+        xhrGet() {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '//localhost/base/user', true);
+          xhr.onload = function() {
+            console.log(xhr.responseText);
+          };
+          xhr.send('a=1&b=2');
+        },
+        get() {
+          fetch('//localhost/base/user', {
+            method: 'get',
+            // body: 'a=1&b=1' // 报错
+          })
+            .then(r => r.json())
+            .then(console.log);
+        },
+        post() {
+          fetch('//localhost/base/user', {
+            method: 'POST',
+          })
+            .then(r => r.json())
+            .then(console.log);
+        },
+      };
+
+      document.body.onclick = function(e) {
+        handlers[e.target.id] && handlers[e.target.id](e);
+      };
+    </script>
+  </body>
+</html>
