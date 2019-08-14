@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h3>application/x-www-form-urlencoded 转码拼接字符串</h3>
+    <pre>
+  可以看到
+  1. Content-Type: application/x-www-form-urlencoded
+  2. Form Data: name=xxx&password=xxx
+</pre
+    >
+    <form
+      action="/form"
+      method="post"
+      enctype="application/x-www-form-urlencoded"
+    >
+      <input type="text" name="name" />
+      <input type="password" name="password" />
+      <input type="submit" />
+    </form>
+
+    <h3>multipart/form-data 代表请求有多个部分</h3>
+    <pre>
+  可以看到
+  1. Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryhzpwDjZ4dq1bhCHc
+      1. 包含一个 Content-Type 与 Boundary 分界线
+  2. From Data（被 分界线 分为多个部分，每个部分有自己的 Content-Disposition 与 Content-Type）:
+    ------WebKitFormBoundaryhzpwDjZ4dq1bhCHc
+    Content-Disposition: form-data; name="name"
+
+    sadf
+    ------WebKitFormBoundaryhzpwDjZ4dq1bhCHc
+    Content-Disposition: form-data; name="password"
+
+    asdf
+    ------WebKitFormBoundaryhzpwDjZ4dq1bhCHc
+    Content-Disposition: form-data; name="file"; filename="atop.png"
+    Content-Type: image/png
+</pre
+    >
+    <form id="form" action="/form" method="post" enctype="multipart/form-data">
+      <input type="text" name="name" />
+      <input type="password" name="password" />
+      <input type="file" name="file" />
+      <input type="submit" />
+    </form>
+    <script>
+      const form = document.getElementById('form');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        fetch('/form', {
+          method: 'post',
+          body: formData,
+        });
+      });
+    </script>
+  </body>
+</html>
