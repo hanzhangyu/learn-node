@@ -1,3 +1,6 @@
+/**
+ * tty 传入的 stdin 很奇怪，有时候 parent 收得到 有时候收不到，但是只会流向 child 或者 parent 中的一个
+ */
 const fork = require('child_process').fork;
 const readline = require('readline');
 
@@ -14,14 +17,16 @@ if (!process.env.isChild) {
   });
 }
 
-console.log(`Current pid: ${process.pid}`, process.env.isChild);
+const uid = process.env.isChild? '[CHILD]': '[PARENT]';
+
+console.log(`${uid}Current pid: ${process.pid}`, process.env.isChild);
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-rl.question('exit? ' + process.env.isChild + '\n', answer => {
-  console.log(`bye: ${answer}` + process.env.isChild + '\n');
+rl.question(uid+ 'exit? \n', answer => {
+  console.log(`${uid}bye: ${answer}\n`);
   rl.close();
 });
